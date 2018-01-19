@@ -1,0 +1,4 @@
+#Fri Jan 19 19:44:25 IST 2018
+base.0=/run/media/nsaxena/Videos and Music/Projects/OnGoing/android-Camera2Basic/Application/build/intermediates/transforms/dexMerger/debug/258
+path.0=classes.dex
+renamed.0=classes.dex

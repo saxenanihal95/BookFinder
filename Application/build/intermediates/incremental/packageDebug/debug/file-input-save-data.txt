@@ -1,0 +1,7 @@
+#Internal package file, do not edit.
+#Fri Jan 19 19:45:08 IST 2018
+0.baseType=DIRECTORY
+0.base=/run/media/nsaxena/Videos and Music/Projects/OnGoing/android-Camera2Basic/Application/build/intermediates/transforms/dexMerger/debug/266
+0.path=classes.dex
+0.set=DEX
+count=1

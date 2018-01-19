@@ -20,10 +20,14 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -41,9 +45,12 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
@@ -59,17 +66,36 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Headers;
+import okhttp3.Request;
+import okhttp3.Response;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
 
 public class Camera2BasicFragment extends Fragment
         implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
@@ -80,6 +106,9 @@ public class Camera2BasicFragment extends Fragment
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
+
+    private static StorageReference mStorageRef;
+
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -243,6 +272,30 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public void onImageAvailable(ImageReader reader) {
+            // First I get the path to gallery and crate new Album to my app
+            String pathD = Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DCIM + "/";
+            File mediaStorageDir = new File(pathD, "MyAlbum");
+            if (!mediaStorageDir.exists()) {
+                if (!mediaStorageDir.mkdirs()) {
+                    Log.d("MyCameraApp", "failed to create directory");
+                }
+            }
+        /*Second I cut mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
+        from onActivityCreated and add here with the new path from my Album*/
+
+
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            mFile = new File(mediaStorageDir,"ImageName"+"_"+ timeStamp+".jpeg");
+
+            //Then the contentValues
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.TITLE, "ImageName");
+            values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
+            values.put(MediaStore.Images.Media.CONTENT_TYPE,"image/jpeg");
+            values.put("_data", mFile.getAbsolutePath());
+            ContentResolver cr = getActivity().getContentResolver();
+            cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            //This line is already in the code
             mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
         }
 
@@ -933,12 +986,62 @@ public class Camera2BasicFragment extends Fragment
         @Override
         public void run() {
             ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
+            
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
             FileOutputStream output = null;
             try {
                 output = new FileOutputStream(mFile);
+
                 output.write(bytes);
+                mStorageRef = FirebaseStorage.getInstance().getReference();
+                Uri file = Uri.fromFile(mFile);
+                StorageReference riversRef = mStorageRef.child(mFile.getName());
+
+                riversRef.putFile(file)
+                        .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                            @Override
+                            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                                // Get a URL to the uploaded content
+                                Uri downloadUrl = taskSnapshot.getDownloadUrl();
+
+                                OkHttpClient client = new OkHttpClient();
+
+                                String url="http://devers.000webhostapp.com/image/?imageUrl="+downloadUrl.toString();
+
+                                Log.d(TAG, "downloadUrl : "+url);
+
+                                Request request = new Request.Builder()
+                                        .url(url)
+                                        .build();
+
+                                client.newCall(request).enqueue(new Callback() {
+                                    @Override public void onFailure(Call call, IOException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                    @Override public void onResponse(Call call, Response response) throws IOException {
+                                        try (ResponseBody responseBody = response.body()) {
+                                            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+
+                                            Headers responseHeaders = response.headers();
+                                            for (int i = 0, size = responseHeaders.size(); i < size; i++) {
+                                                System.out.println(responseHeaders.name(i) + ": " + responseHeaders.value(i));
+                                            }
+
+                                            System.out.println(responseBody.string());
+                                        }
+                                    }
+                                });
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception exception) {
+                                // Handle unsuccessful uploads
+                                // ...
+                            }
+                        });
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {

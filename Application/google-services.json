@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "299739404580",
+    "firebase_url": "https://imagesearch-d7db8.firebaseio.com",
+    "project_id": "imagesearch-d7db8",
+    "storage_bucket": "imagesearch-d7db8.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:299739404580:android:e1ee61e256773eb3",
+        "android_client_info": {
+          "package_name": "com.example.android.camera2basic"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "299739404580-is2l221qv9dpnj9nm503lqjdfntsd5u1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.android.camera2basic",
+            "certificate_hash": "b5b7e57dbdaae6bcf80f11c1eda643d33968dff2"
+          }
+        },
+        {
+          "client_id": "299739404580-85ci5b74n7u92vv35jp1s6monb4fnk9r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAU12iIJi0QjDt14q9LEjAD2j9TNt263ps"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "299739404580-85ci5b74n7u92vv35jp1s6monb4fnk9r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
